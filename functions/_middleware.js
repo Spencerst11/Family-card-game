@@ -44,7 +44,6 @@ if (url.pathname === "/login" || url.pathname === "/auth") {
 }
 
 
-  
   const cookie = context.request.headers.get("Cookie") || "";
   const authed = cookie.includes("fcg_auth=1");
 
