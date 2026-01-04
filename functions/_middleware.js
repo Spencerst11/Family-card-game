@@ -34,10 +34,16 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
 
   // Allow static assets + the login endpoint without auth loops
-  if (url.pathname === "/login" || url.pathname.startsWith("/assets/")) {
-    return context.next();
-  }
+// Allow API routes and assets to bypass auth
+if (
+  url.pathname.startsWith("/api/") ||
+  url.pathname === "/login" ||
+  url.pathname.startsWith("/assets/")
+) {
+  return context.next();
+}
 
+  
   const cookie = context.request.headers.get("Cookie") || "";
   const authed = cookie.includes("fcg_auth=1");
 
