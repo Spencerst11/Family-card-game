@@ -3,5 +3,6 @@ export async function onRequestGet({ env, request }) {
     env.ROOM_MANAGER.idFromName("global")
   );
 
-  return stub.fetch(request.url);
+  const url = new URL(request.url);
+  return stub.fetch(`https://room-manager/get${url.search}`);
 }
