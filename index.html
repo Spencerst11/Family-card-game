@@ -5,42 +5,184 @@
   <title>Family Card Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    :root { color-scheme: dark; }
     body {
       font-family: system-ui, sans-serif;
       background: #0f172a;
       color: white;
+      margin: 0;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      padding: 18px;
     }
     .box {
       background: #020617;
-      padding: 24px;
+      padding: 22px;
       border-radius: 12px;
-      width: 320px;
-      text-align: center;
+      width: 420px;
+      max-width: 95vw;
+      border: 1px solid rgba(255,255,255,.08);
     }
+    h2 { margin: 0 0 8px; }
+    p { margin: 8px 0; opacity: .85; }
+    .row { display: flex; gap: 10px; }
     input, button {
       width: 100%;
-      padding: 10px;
-      margin-top: 12px;
-      border-radius: 6px;
-      border: none;
+      padding: 10px 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: white;
+      font-size: 16px;
+      box-sizing: border-box;
     }
     button {
       background: #22c55e;
-      color: black;
-      font-weight: bold;
+      color: #04120a;
+      font-weight: 800;
+      border: none;
       cursor: pointer;
+    }
+    button.secondary {
+      background: rgba(255,255,255,.08);
+      color: white;
+      font-weight: 700;
+    }
+    .muted { opacity: .7; font-size: 14px; margin-top: 10px; }
+    .pill {
+      display:inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      margin-left: 8px;
+      font-size: 12px;
+      opacity:.9;
+    }
+    .error { color: #fca5a5; font-size: 14px; margin-top: 8px; display:none; }
+    .ok { color: #86efac; font-size: 14px; margin-top: 8px; display:none; }
+    hr { border: none; border-top: 1px solid rgba(255,255,255,.10); margin: 16px 0; }
+    .small { font-size: 13px; opacity: .75; }
+    .code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>Family Card Game</h2>
-    <p>This site is live on Cloudflare.</p>
-    <p>Next step: game logic + rooms.</p>
-  </div>
+  <div class="box" id="app"></div>
+
+  <script>
+    const STORAGE_KEY = "fcg_name";
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
+
+    function setView(html) {
+      document.getElementById("app").innerHTML = html;
+    }
+
+    function getName() {
+      return localStorage.getItem(STORAGE_KEY) || "";
+    }
+
+    function saveName(name) {
+      localStorage.setItem(STORAGE_KEY, name);
+    }
+
+    // --- Views ---
+
+    function viewName() {
+      const current = getName();
+      setView(`
+        <h2>Family Card Game <span class="pill">Private</span></h2>
+        <p>Enter your display name (no account needed).</p>
+
+        <input id="name" maxlength="20" placeholder="e.g., Mom, Dad, Spencer" value="${escapeHtml(current)}" />
+        <button id="continue">Continue</button>
+        <div class="error" id="err">Please enter a name.</div>
+
+        <div class="muted small">This is saved only on your device/browser.</div>
+      `);
+
+      const nameEl = document.getElementById("name");
+      const errEl = document.getElementById("err");
+
+      function submit() {
+        const name = (nameEl.value || "").trim();
+        if (!name) {
+          errEl.style.display = "block";
+          return;
+        }
+        errEl.style.display = "none";
+        saveName(name);
+        viewLobby();
+      }
+
+      document.getElementById("continue").onclick = submit;
+      nameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+      nameEl.focus();
+    }
+
+    function viewLobby() {
+      const name = getName();
+      setView(`
+        <h2>Lobby <span class="pill">${escapeHtml(name)}</span></h2>
+        <p>Create a room or join with a room code.</p>
+
+        <div class="row">
+          <button id="create">Create Room</button>
+          <button id="change" class="secondary">Change Name</button>
+        </div>
+
+        <hr />
+
+        <label class="small">Join Room</label>
+        <div class="row">
+          <input id="code" class="code" maxlength="6" placeholder="ROOM" />
+          <button id="join">Join</button>
+        </div>
+
+        <div class="error" id="err"></div>
+        <div class="ok" id="ok"></div>
+
+        <div class="muted small">
+          Next: we’ll connect this to the real multiplayer room server.
+        </div>
+      `);
+
+      document.getElementById("change").onclick = () => viewName();
+
+      // For now this is a placeholder until we wire the backend room server.
+      document.getElementById("create").onclick = () => {
+        const ok = document.getElementById("ok");
+        ok.style.display = "block";
+        ok.textContent = "Room creation will be enabled next (multiplayer backend).";
+      };
+
+      document.getElementById("join").onclick = () => {
+        const code = (document.getElementById("code").value || "").trim().toUpperCase();
+        const err = document.getElementById("err");
+        err.style.display = "none";
+        if (!code) {
+          err.style.display = "block";
+          err.textContent = "Enter a room code.";
+          return;
+        }
+        err.style.display = "block";
+        err.textContent = "Joining will be enabled next (multiplayer backend).";
+      };
+    }
+
+    // --- App start ---
+    if (getName()) viewLobby();
+    else viewName();
+  </script>
 </body>
 </html>
