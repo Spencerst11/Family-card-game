@@ -1,0 +1,12 @@
+{
+  "name": "family-card-game",
+  "compatibility_date": "2026-01-04",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ROOM_MANAGER",
+        "class_name": "RoomManager"
+      }
+    ]
+  }
+}
