@@ -33,15 +33,16 @@ function html(title, body) {
 export async function onRequest(context) {
   const url = new URL(context.request.url);
 
-  // Allow static assets + the login endpoint without auth loops
-// Allow API routes and assets to bypass auth
-if (
-  url.pathname.startsWith("/api/") ||
-  url.pathname === "/login" ||
-  url.pathname.startsWith("/assets/")
-) {
+// ALWAYS allow API routes to bypass auth
+if (url.pathname.startsWith("/api/")) {
   return context.next();
 }
+
+// Allow login page itself
+if (url.pathname === "/login") {
+  return context.next();
+}
+
 
   
   const cookie = context.request.headers.get("Cookie") || "";
