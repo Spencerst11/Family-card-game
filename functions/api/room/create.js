@@ -3,8 +3,9 @@ export async function onRequestPost({ env, request }) {
     env.ROOM_MANAGER.idFromName("global")
   );
 
-  return stub.fetch("https://room/create", {
+  return stub.fetch("https://room-manager/create", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: await request.text()
   });
 }
