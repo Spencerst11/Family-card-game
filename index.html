@@ -159,26 +159,111 @@
 
       document.getElementById("change").onclick = () => viewName();
 
-      // For now this is a placeholder until we wire the backend room server.
-      document.getElementById("create").onclick = () => {
-        const ok = document.getElementById("ok");
-        ok.style.display = "block";
-        ok.textContent = "Room creation will be enabled next (multiplayer backend).";
-      };
+      document.getElementById("create").onclick = async () => {
+  const err = document.getElementById("err");
+  err.style.display = "none";
 
-      document.getElementById("join").onclick = () => {
-        const code = (document.getElementById("code").value || "").trim().toUpperCase();
-        const err = document.getElementById("err");
-        err.style.display = "none";
-        if (!code) {
-          err.style.display = "block";
-          err.textContent = "Enter a room code.";
-          return;
-        }
-        err.style.display = "block";
-        err.textContent = "Joining will be enabled next (multiplayer backend).";
-      };
+  try {
+    const res = await fetch("/api/room/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: getName() })
+    });
+
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Create failed");
+
+    localStorage.setItem("fcg_roomCode", data.roomCode);
+    localStorage.setItem("fcg_playerId", data.playerId);
+
+    viewRoom(data.roomCode);
+  } catch (e) {
+    err.style.display = "block";
+    err.textContent = e.message;
+  }
+};
+
+document.getElementById("join").onclick = async () => {
+  const code = (document.getElementById("code").value || "").trim().toUpperCase();
+  const err = document.getElementById("err");
+  err.style.display = "none";
+
+  if (!code) {
+    err.style.display = "block";
+    err.textContent = "Enter a room code.";
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/room/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: getName(), roomCode: code })
+    });
+
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Join failed");
+
+    localStorage.setItem("fcg_roomCode", data.roomCode);
+    localStorage.setItem("fcg_playerId", data.playerId);
+
+    viewRoom(data.roomCode);
+  } catch (e) {
+    err.style.display = "block";
+    err.textContent = e.message;
+  }
+};
+
+     
+    
     }
+
+    function viewRoom(roomCode) {
+  setView(`
+    <h2>Room <span class="pill code">${escapeHtml(roomCode)}</span></h2>
+    <p class="small">Share the code with family. Max 7 players.</p>
+
+    <div id="players" class="muted">Loading players…</div>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="leave" class="secondary">Leave Room</button>
+      <button id="refresh">Refresh</button>
+    </div>
+
+    <div class="muted small" style="margin-top:12px;">
+      Next: real-time gameplay (draw/discard, turns, scoring).
+    </div>
+  `);
+
+  async function load() {
+    const res = await fetch(`/api/room/get?roomCode=${encodeURIComponent(roomCode)}`);
+    const data = await res.json();
+    const el = document.getElementById("players");
+
+    if (!data.ok) {
+      el.textContent = data.error || "Room not found.";
+      return;
+    }
+
+    el.innerHTML = `<b>Players (${data.players.length}/7)</b><br/>` +
+      data.players.map(p => `• ${escapeHtml(p.name)}`).join("<br/>");
+  }
+
+document.getElementById("leave").onclick = () => {
+  if (window.__fcg_room_poll__) clearInterval(window.__fcg_room_poll__);
+  window.__fcg_room_poll__ = null;
+  localStorage.removeItem("fcg_roomCode");
+  viewLobby();
+};
+
+
+  document.getElementById("refresh").onclick = load;
+
+      load();
+const interval = setInterval(load, 2000);
+window.__fcg_room_poll__ = interval;
+
+}
 
     // --- App start ---
     if (getName()) viewLobby();
