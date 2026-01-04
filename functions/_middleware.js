@@ -33,13 +33,13 @@ function html(title, body) {
 export async function onRequest(context) {
   const url = new URL(context.request.url);
 
-// ALWAYS allow API routes to bypass auth
+// ALWAYS allow API routes
 if (url.pathname.startsWith("/api/")) {
   return context.next();
 }
 
-// Allow login page itself
-if (url.pathname === "/login") {
+// Allow auth endpoints
+if (url.pathname === "/login" || url.pathname === "/auth") {
   return context.next();
 }
 
